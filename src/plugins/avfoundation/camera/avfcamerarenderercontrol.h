@@ -39,36 +39,50 @@
 **
 ****************************************************************************/
 
+#ifndef AVFVIDEORENDERERCONTROL_H
+#define AVFVIDEORENDERERCONTROL_H
 
-#ifndef AVFSERVICEPLUGIN_H
-#define AVFSERVICEPLUGIN_H
+#include <QtMultimedia/qvideorenderercontrol.h>
+#include <QtMultimedia/qvideoframe.h>
+#include <QtCore/qmutex.h>
 
-#include <qmediaserviceproviderplugin.h>
-#include <QtCore/qmap.h>
+#import <AVFoundation/AVFoundation.h>
+
+@class AVFCaptureFramesDelegate;
 
 QT_BEGIN_NAMESPACE
 
-class AVFServicePlugin : public QMediaServiceProviderPlugin,
-                         public QMediaServiceSupportedDevicesInterface
+class AVFCameraSession;
+class AVFCameraService;
+class AVFCameraRendererControl;
+
+class AVFCameraRendererControl : public QVideoRendererControl
 {
-    Q_OBJECT
-    Q_INTERFACES(QMediaServiceSupportedDevicesInterface)
-    Q_PLUGIN_METADATA(IID "org.qt-project.qt.mediaserviceproviderfactory/5.0" FILE "avfcamera.json")
-
+Q_OBJECT
 public:
-    AVFServicePlugin();
+    AVFCameraRendererControl(QObject *parent = 0);
+    ~AVFCameraRendererControl();
 
-    QMediaService* create(QString const& key);
-    void release(QMediaService *service);
+    QAbstractVideoSurface *surface() const;
+    void setSurface(QAbstractVideoSurface *surface);
 
-    QList<QByteArray> devices(const QByteArray &service) const;
-    QString deviceDescription(const QByteArray &service, const QByteArray &device);
+    void configureAVCaptureSession(AVCaptureSession *captureSession);
+    void syncHandleViewfinderFrame(const QVideoFrame &frame);
+
+Q_SIGNALS:
+    void surfaceChanged(QAbstractVideoSurface *surface);
+
+private Q_SLOTS:
+    void handleViewfinderFrame();
 
 private:
-    void updateDevices() const;
+    QAbstractVideoSurface *m_surface;
+    AVFCaptureFramesDelegate *m_viewfinderFramesDelegate;
+    AVCaptureSession *m_captureSession;
+    AVCaptureVideoDataOutput *m_videoDataOutput;
 
-    mutable QList<QByteArray> m_cameraDevices;
-    mutable QMap<QByteArray, QString> m_cameraDescriptions;
+    QVideoFrame m_lastViewfinderFrame;
+    QMutex m_vfMutex;
 };
 
 QT_END_NAMESPACE

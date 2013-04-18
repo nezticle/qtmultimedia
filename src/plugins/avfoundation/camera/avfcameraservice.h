@@ -53,7 +53,7 @@ class AVFCameraControl;
 class AVFCameraMetaDataControl;
 class AVFVideoWindowControl;
 class AVFVideoWidgetControl;
-class AVFVideoRendererControl;
+class AVFCameraRendererControl;
 class AVFMediaRecorderControl;
 class AVFImageCaptureControl;
 class AVFCameraSession;
@@ -84,7 +84,7 @@ private:
     AVFCameraControl *m_cameraControl;
     AVFVideoDeviceControl *m_videoDeviceControl;
     AVFAudioInputSelectorControl *m_audioInputSelectorControl;
-    AVFVideoRendererControl *m_videoOutput;
+    AVFCameraRendererControl *m_videoOutput;
     AVFCameraMetaDataControl *m_metaDataControl;
     AVFMediaRecorderControl *m_recorderControl;
     AVFImageCaptureControl *m_imageCaptureControl;

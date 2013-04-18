@@ -39,38 +39,68 @@
 **
 ****************************************************************************/
 
-#include "avfmediaplayerserviceplugin.h"
-#include <QtCore/QDebug>
+#include <QtCore/qstring.h>
+#include <QtCore/qdebug.h>
 
+#include "avfserviceplugin.h"
+#include "avfcameraservice.h"
 #include "avfmediaplayerservice.h"
+
+#include <qmediaserviceproviderplugin.h>
 
 #import <AVFoundation/AVFoundation.h>
 
-QT_USE_NAMESPACE
 
-AVFMediaPlayerServicePlugin::AVFMediaPlayerServicePlugin()
+QT_BEGIN_NAMESPACE
+
+
+AVFServicePlugin::AVFServicePlugin()
 {
     buildSupportedTypes();
 }
 
-QMediaService *AVFMediaPlayerServicePlugin::create(const QString &key)
+QMediaService* AVFServicePlugin::create(QString const& key)
 {
-#ifdef QT_DEBUG_AVF
-    qDebug() << "AVFMediaPlayerServicePlugin::create" << key;
-#endif
-    if (key == QLatin1String(Q_MEDIASERVICE_MEDIAPLAYER))
+    if (key == QLatin1String(Q_MEDIASERVICE_CAMERA))
+        return new AVFCameraService;
+    else if (key == QLatin1String(Q_MEDIASERVICE_MEDIAPLAYER))
         return new AVFMediaPlayerService;
+    else
+        qWarning() << "unsupported key:" << key;
 
-    qWarning() << "unsupported key: " << key;
     return 0;
 }
 
-void AVFMediaPlayerServicePlugin::release(QMediaService *service)
+void AVFServicePlugin::release(QMediaService *service)
 {
     delete service;
 }
 
-QMediaServiceProviderHint::Features AVFMediaPlayerServicePlugin::supportedFeatures(const QByteArray &service) const
+QList<QByteArray> AVFServicePlugin::devices(const QByteArray &service) const
+{
+    if (service == Q_MEDIASERVICE_CAMERA) {
+        if (m_cameraDevices.isEmpty())
+            updateDevices();
+
+        return m_cameraDevices;
+    }
+
+    return QList<QByteArray>();
+}
+
+QString AVFServicePlugin::deviceDescription(const QByteArray &service, const QByteArray &device)
+{
+    if (service == Q_MEDIASERVICE_CAMERA) {
+        if (m_cameraDevices.isEmpty())
+            updateDevices();
+
+        return m_cameraDescriptions.value(device);
+    }
+
+    return QString();
+}
+
+QMediaServiceProviderHint::Features AVFServicePlugin::supportedFeatures(const QByteArray &service) const
 {
     if (service == Q_MEDIASERVICE_MEDIAPLAYER)
         return QMediaServiceProviderHint::VideoSurface;
@@ -78,7 +108,7 @@ QMediaServiceProviderHint::Features AVFMediaPlayerServicePlugin::supportedFeatur
         return QMediaServiceProviderHint::Features();
 }
 
-QMultimedia::SupportEstimate AVFMediaPlayerServicePlugin::hasSupport(const QString &mimeType, const QStringList &codecs) const
+QMultimedia::SupportEstimate AVFServicePlugin::hasSupport(const QString &mimeType, const QStringList &codecs) const
 {
     Q_UNUSED(codecs);
 
@@ -88,12 +118,25 @@ QMultimedia::SupportEstimate AVFMediaPlayerServicePlugin::hasSupport(const QStri
     return QMultimedia::MaybeSupported;
 }
 
-QStringList AVFMediaPlayerServicePlugin::supportedMimeTypes() const
+QStringList AVFServicePlugin::supportedMimeTypes() const
 {
     return m_supportedMimeTypes;
 }
 
-void AVFMediaPlayerServicePlugin::buildSupportedTypes()
+void AVFServicePlugin::updateDevices() const
+{
+    m_cameraDevices.clear();
+    m_cameraDescriptions.clear();
+
+    NSArray *videoDevices = [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo];
+    for (AVCaptureDevice *device in videoDevices) {
+        QByteArray deviceId([[device uniqueID] UTF8String]);
+        m_cameraDevices << deviceId;
+        m_cameraDescriptions.insert(deviceId, QString::fromUtf8([[device localizedName] UTF8String]));
+    }
+}
+
+void AVFServicePlugin::buildSupportedTypes()
 {
     //Populate m_supportedMimeTypes with mimetypes AVAsset supports
     NSArray *mimeTypes = [AVURLAsset audiovisualMIMETypes];
@@ -107,3 +150,5 @@ void AVFMediaPlayerServicePlugin::buildSupportedTypes()
 #endif
 
 }
+
+QT_END_NAMESPACE

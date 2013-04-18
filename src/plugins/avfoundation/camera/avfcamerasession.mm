@@ -43,7 +43,7 @@
 #include "avfcamerasession.h"
 #include "avfcameraservice.h"
 #include "avfcameracontrol.h"
-#include "avfvideorenderercontrol.h"
+#include "avfcamerarenderercontrol.h"
 #include "avfvideodevicecontrol.h"
 #include "avfaudioinputselectorcontrol.h"
 
@@ -151,7 +151,7 @@ AVFCameraSession::~AVFCameraSession()
     [m_captureSession release];
 }
 
-void AVFCameraSession::setVideoOutput(AVFVideoRendererControl *output)
+void AVFCameraSession::setVideoOutput(AVFCameraRendererControl *output)
 {
     m_videoOutput = output;
     if (output)

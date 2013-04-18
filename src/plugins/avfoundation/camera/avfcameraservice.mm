@@ -50,7 +50,7 @@
 #include "avfcamerametadatacontrol.h"
 #include "avfmediarecordercontrol.h"
 #include "avfimagecapturecontrol.h"
-#include "avfvideorenderercontrol.h"
+#include "avfcamerarenderercontrol.h"
 #include "avfmediarecordercontrol.h"
 #include "avfimagecapturecontrol.h"
 
@@ -116,7 +116,7 @@ QMediaControl *AVFCameraService::requestControl(const char *name)
 
     if (!m_videoOutput) {
         if (qstrcmp(name, QVideoRendererControl_iid) == 0)
-            m_videoOutput = new AVFVideoRendererControl(this);
+            m_videoOutput = new AVFCameraRendererControl(this);
 
         if (m_videoOutput) {
             m_session->setVideoOutput(m_videoOutput);

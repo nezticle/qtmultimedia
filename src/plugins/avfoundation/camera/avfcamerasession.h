@@ -53,7 +53,7 @@ QT_BEGIN_NAMESPACE
 
 class AVFCameraControl;
 class AVFCameraService;
-class AVFVideoRendererControl;
+class AVFCameraRendererControl;
 
 class AVFCameraSession : public QObject
 {
@@ -62,7 +62,7 @@ public:
     AVFCameraSession(AVFCameraService *service, QObject *parent = 0);
     ~AVFCameraSession();
 
-    void setVideoOutput(AVFVideoRendererControl *output);
+    void setVideoOutput(AVFCameraRendererControl *output);
     AVCaptureSession *captureSession() const { return m_captureSession; }
 
     QCamera::State state() const;
@@ -86,7 +86,7 @@ private:
     void attachInputDevices();
 
     AVFCameraService *m_service;
-    AVFVideoRendererControl *m_videoOutput;
+    AVFCameraRendererControl *m_videoOutput;
 
     QCamera::State m_state;
     bool m_active;

@@ -48,7 +48,7 @@ mac:!simulator {
     SUBDIRS += audiocapture
 
     !ios {
-        SUBDIRS += qt7
+        !config_avfoundation: SUBDIRS += qt7
         config_avfoundation: SUBDIRS += avfoundation
     }
 }

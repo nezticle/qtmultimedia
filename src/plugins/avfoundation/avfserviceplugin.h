@@ -39,74 +39,45 @@
 **
 ****************************************************************************/
 
-#include <QtCore/qstring.h>
-#include <QtCore/qdebug.h>
 
-#include "avfcameraserviceplugin.h"
-#include "avfcameraservice.h"
+#ifndef AVFSERVICEPLUGIN_H
+#define AVFSERVICEPLUGIN_H
 
-#include <qmediaserviceproviderplugin.h>
-
-#import <AVFoundation/AVFoundation.h>
-
+#include <QtMultimedia/qmediaserviceproviderplugin.h>
+#include <QtCore/qmap.h>
 
 QT_BEGIN_NAMESPACE
 
-
-AVFServicePlugin::AVFServicePlugin()
+class AVFServicePlugin : public QMediaServiceProviderPlugin
+                       , public QMediaServiceSupportedFormatsInterface
+                       , public QMediaServiceFeaturesInterface
 {
-}
+    Q_OBJECT
+    Q_INTERFACES(QMediaServiceSupportedFormatsInterface)
+    Q_INTERFACES(QMediaServiceFeaturesInterface)
+    Q_PLUGIN_METADATA(IID "org.qt-project.qt.mediaserviceproviderfactory/5.0" FILE "avfoundation.json")
 
-QMediaService* AVFServicePlugin::create(QString const& key)
-{
-    if (key == QLatin1String(Q_MEDIASERVICE_CAMERA))
-        return new AVFCameraService;
-    else
-        qWarning() << "unsupported key:" << key;
+public:
+    AVFServicePlugin();
 
-    return 0;
-}
+    QMediaService* create(QString const& key);
+    void release(QMediaService *service);
 
-void AVFServicePlugin::release(QMediaService *service)
-{
-    delete service;
-}
+    QList<QByteArray> devices(const QByteArray &service) const;
+    QString deviceDescription(const QByteArray &service, const QByteArray &device);
+    QMediaServiceProviderHint::Features supportedFeatures(const QByteArray &service) const;
+    QMultimedia::SupportEstimate hasSupport(const QString &mimeType, const QStringList& codecs) const;
+    QStringList supportedMimeTypes() const;
 
-QList<QByteArray> AVFServicePlugin::devices(const QByteArray &service) const
-{
-    if (service == Q_MEDIASERVICE_CAMERA) {
-        if (m_cameraDevices.isEmpty())
-            updateDevices();
+private:
+    void updateDevices() const;
+    void buildSupportedTypes();
 
-        return m_cameraDevices;
-    }
-
-    return QList<QByteArray>();
-}
-
-QString AVFServicePlugin::deviceDescription(const QByteArray &service, const QByteArray &device)
-{
-    if (service == Q_MEDIASERVICE_CAMERA) {
-        if (m_cameraDevices.isEmpty())
-            updateDevices();
-
-        return m_cameraDescriptions.value(device);
-    }
-
-    return QString();
-}
-
-void AVFServicePlugin::updateDevices() const
-{
-    m_cameraDevices.clear();
-    m_cameraDescriptions.clear();
-
-    NSArray *videoDevices = [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo];
-    for (AVCaptureDevice *device in videoDevices) {
-        QByteArray deviceId([[device uniqueID] UTF8String]);
-        m_cameraDevices << deviceId;
-        m_cameraDescriptions.insert(deviceId, QString::fromUtf8([[device localizedName] UTF8String]));
-    }
-}
+    mutable QList<QByteArray> m_cameraDevices;
+    mutable QMap<QByteArray, QString> m_cameraDescriptions;
+    QStringList m_supportedMimeTypes;
+};
 
 QT_END_NAMESPACE
+
+#endif
