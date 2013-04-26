@@ -44,15 +44,17 @@
 
 #include <QtMultimedia/QMetaDataReaderControl>
 
+@class AVAsset;
+
 QT_BEGIN_NAMESPACE
 
-class AVFMediaPlayerSession;
+class AVFMediaPlayer;
 
 class AVFMediaPlayerMetaDataControl : public QMetaDataReaderControl
 {
     Q_OBJECT
 public:
-    explicit AVFMediaPlayerMetaDataControl(AVFMediaPlayerSession *session, QObject *parent = 0);
+    explicit AVFMediaPlayerMetaDataControl(AVFMediaPlayer *player, QObject *parent = 0);
     virtual ~AVFMediaPlayerMetaDataControl();
 
     bool isMetaDataAvailable() const;
@@ -65,9 +67,9 @@ private Q_SLOTS:
     void updateTags();
 
 private:
-    AVFMediaPlayerSession *m_session;
+    AVFMediaPlayer *m_player;
     QMap<QString, QVariant> m_tags;
-    void *m_asset;
+    AVAsset *m_asset;
 
 };
 

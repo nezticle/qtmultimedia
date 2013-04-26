@@ -4,10 +4,10 @@ HEADERS += \
     mediaplayer/avfmediaplayercontrol.h \
     mediaplayer/avfmediaplayermetadatacontrol.h \
     mediaplayer/avfmediaplayerservice.h \
-    mediaplayer/avfmediaplayersession.h
+    mediaplayer/avfmediaplayer.h
 
 OBJECTIVE_SOURCES += \
     mediaplayer/avfmediaplayercontrol.mm \
     mediaplayer/avfmediaplayermetadatacontrol.mm \
     mediaplayer/avfmediaplayerservice.mm \
-    mediaplayer/avfmediaplayersession.mm
+    mediaplayer/avfmediaplayer.mm

@@ -43,8 +43,6 @@
 #include "avfmediaplayerservice.h"
 #include "avfvideooutput.h"
 
-#import <AVFoundation/AVFoundation.h>
-
 QT_USE_NAMESPACE
 
 //AVAsset Keys

@@ -40,26 +40,29 @@
 ****************************************************************************/
 
 #include "avfmediaplayerservice.h"
-#include "avfmediaplayersession.h"
 #include "avfmediaplayercontrol.h"
 #include "avfmediaplayermetadatacontrol.h"
-#include "avfvideooutput.h"
+#include "avfmediaplayer.h"
 #include "avfvideorenderercontrol.h"
 
-#ifndef QT_NO_WIDGETS
-#include "avfvideowidgetcontrol.h"
-#endif
+//#ifndef QT_NO_WIDGETS
+//#include "avfvideowidgetcontrol.h"
+//#endif
 
-QT_USE_NAMESPACE
+QT_BEGIN_NAMESPACE
 
 AVFMediaPlayerService::AVFMediaPlayerService(QObject *parent)
     : QMediaService(parent)
     , m_videoOutput(0)
 {
-    m_session = new AVFMediaPlayerSession(this);
-    m_control = new AVFMediaPlayerControl(this);
-    m_control->setSession(m_session);
-    m_playerMetaDataControl = new AVFMediaPlayerMetaDataControl(m_session, this);
+    m_player = new AVFMediaPlayer(this);
+    m_control = new AVFMediaPlayerControl(m_player, this);
+    m_playerMetaDataControl = new AVFMediaPlayerMetaDataControl(m_player, this);
+
+    m_videoRenderer = new AVFVideoRendererControl(this);
+//#if defined(HAVE_WIDGETS)
+//    m_videoWidget = new AVFVideoWidgetControl(this);
+//#endif
 
     connect(m_control, SIGNAL(mediaChanged(QMediaContent)), m_playerMetaDataControl, SLOT(updateTags()));
 }
@@ -69,7 +72,6 @@ AVFMediaPlayerService::~AVFMediaPlayerService()
 #ifdef QT_DEBUG_AVF
     qDebug() << Q_FUNC_INFO;
 #endif
-    delete m_session;
 }
 
 QMediaControl *AVFMediaPlayerService::requestControl(const char *name)
@@ -84,22 +86,21 @@ QMediaControl *AVFMediaPlayerService::requestControl(const char *name)
     if (qstrcmp(name, QMetaDataReaderControl_iid) == 0)
         return m_playerMetaDataControl;
 
-    if (qstrcmp(name, QVideoRendererControl_iid) == 0) {
-        if (!m_videoOutput)
-            m_videoOutput = new AVFVideoRendererControl(this);
+    //TODO: Add QMediaVideoProbeControl_iid
+    //TODO: Add QMediaAudioProbeControl_iid
 
-        m_session->setVideoOutput(qobject_cast<AVFVideoOutput*>(m_videoOutput));
-        return m_videoOutput;
+    if (!m_videoOutput) {
+        if (qstrcmp(name, QVideoRendererControl_iid) == 0)
+            m_videoOutput = m_videoRenderer;
+//#if defined(HAVE_WIDGETS)
+//        else if (qstrcmp(name, QVideoWidgetControl_iid) == 0)
+//            m_videoOutput = m_videoWidget;
+//#endif
+        if (m_videoOutput) {
+            m_player->setVideoOutput(qobject_cast<AVFVideoOutput*>(m_videoOutput));
+            return m_videoOutput;
+        }
     }
-#ifndef QT_NO_WIDGETS
-    if (qstrcmp(name, QVideoWidgetControl_iid) == 0) {
-        if (!m_videoOutput)
-            m_videoOutput = new AVFVideoWidgetControl(this);
-
-        m_session->setVideoOutput(qobject_cast<AVFVideoOutput*>(m_videoOutput));
-        return m_videoOutput;
-    }
-#endif
 
     return 0;
 }
@@ -111,11 +112,12 @@ void AVFMediaPlayerService::releaseControl(QMediaControl *control)
 #endif
 
     if (m_videoOutput == control) {
-        AVFVideoRendererControl *renderControl = qobject_cast<AVFVideoRendererControl*>(m_videoOutput);
-        if (renderControl)
-            renderControl->setSurface(0);
         m_videoOutput = 0;
-        m_session->setVideoOutput(0);
-        delete control;
+        m_player->setVideoOutput(0);
     }
+
+    //TODO: Detache Video probe here
+    //TODO: Detache Audio probe here
 }
+
+QT_END_NAMESPACE

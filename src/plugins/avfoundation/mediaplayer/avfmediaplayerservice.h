@@ -46,10 +46,9 @@
 
 QT_BEGIN_NAMESPACE
 
-class AVFMediaPlayerSession;
+class AVFMediaPlayer;
 class AVFMediaPlayerControl;
 class AVFMediaPlayerMetaDataControl;
-class AVFVideoOutput;
 
 class AVFMediaPlayerService : public QMediaService
 {
@@ -61,9 +60,13 @@ public:
     void releaseControl(QMediaControl *control);
 
 private:
-    AVFMediaPlayerSession *m_session;
+    AVFMediaPlayer *m_player;
     AVFMediaPlayerControl *m_control;
     QMediaControl *m_videoOutput;
+    QMediaControl *m_videoRenderer;
+#if defined(HAVE_WIDGETS)
+    QMediaControl *m_videoWidget;
+#endif
     AVFMediaPlayerMetaDataControl *m_playerMetaDataControl;
 };
 

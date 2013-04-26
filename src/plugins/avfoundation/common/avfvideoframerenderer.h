@@ -46,47 +46,46 @@
 #include <QtGui/QImage>
 #include <QtGui/QOpenGLContext>
 #include <QtCore/QSize>
+#include <QtMultimedia/QVideoFrame>
 
-@class CARenderer;
-@class AVPlayerLayer;
+#import <CoreMedia/CMSampleBuffer.h>
+
+#if !defined(Q_OS_IOS) //OS X
+#import <CoreVideo/CVOpenGLTextureCache.h>
+#else
+#import <CoreVideo/CVOpenGLESTextureCache.h>
+#endif
 
 QT_BEGIN_NAMESPACE
 
-class QOpenGLFramebufferObject;
-class QWindow;
 class QOpenGLContext;
-class QAbstractVideoSurface;
-class QGLWidget;
+class QOffscreenSurface;
 
 class AVFVideoFrameRenderer : public QObject
 {
 public:
-    AVFVideoFrameRenderer(QAbstractVideoSurface *surface, QObject *parent = 0);
-#ifndef QT_NO_WIDGETS
-    AVFVideoFrameRenderer(QGLWidget *glWidget, const QSize &size, QObject *parent = 0);
-#endif
+    AVFVideoFrameRenderer(QObject *parent = 0);
 
     virtual ~AVFVideoFrameRenderer();
 
-    GLuint renderLayerToTexture(AVPlayerLayer *layer);
-    QImage renderLayerToImage(AVPlayerLayer *layer);
+    void setTargetOpenGLContext(QOpenGLContext *shareContext);
+
+    QVideoFrame renderSampleBufferToVideoFrame(const CMSampleBufferRef &sampleBuffer);
+
+    bool hasValidTargetOpenGLContext();
 
 private:
-    QOpenGLFramebufferObject* initRenderer(AVPlayerLayer *layer);
-    void renderLayerToFBO(AVPlayerLayer *layer, QOpenGLFramebufferObject *fbo);
 
-    CARenderer *m_videoLayerRenderer;
-#ifndef QT_NO_WIDGETS
-    QGLWidget *m_glWidget;
-#endif
-    QAbstractVideoSurface *m_surface;
-    QOpenGLFramebufferObject *m_fbo[2];
-    QWindow *m_offscreenSurface;
+    bool initRendererWithSharedContext(QOpenGLContext *shareContext);
+
+    bool m_isTextureCacheEnabled;
     QOpenGLContext *m_glContext;
-    QSize m_targetSize;
-
-    uint m_currentBuffer;
-    bool m_isContextShared;
+    QOffscreenSurface *m_offscreenSurface;
+#if !defined(Q_OS_IOS) //OS X
+    CVOpenGLTextureCacheRef m_coreVideoTextureCache;
+#else //iOS
+    CVOpenGLESTextureCacheRef m_coreVideoTextureCache;
+#endif
 };
 
 QT_END_NAMESPACE

@@ -44,17 +44,18 @@
 
 #include <QtCore/qobject.h>
 
+#include <AVFoundation/AVFoundation.h>
+
 QT_BEGIN_NAMESPACE
 
 class AVFVideoOutput
 {
 public:
-    virtual ~AVFVideoOutput() {}
-    virtual void setLayer(void *playerLayer) = 0;
+    virtual void processVideoSampleBuffer(const CMSampleBufferRef &sampleBuffer) = 0;
 };
 
 #define AVFVideoOutput_iid \
-    "org.qt-project.qt.AVFVideoOutput/5.0"
+    "org.qt-project.qtmultimedia.AVFVideoOutput/5.1"
 Q_DECLARE_INTERFACE(AVFVideoOutput, AVFVideoOutput_iid)
 
 QT_END_NAMESPACE

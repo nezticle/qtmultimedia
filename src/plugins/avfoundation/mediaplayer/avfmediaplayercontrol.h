@@ -42,21 +42,28 @@
 #ifndef AVFMEDIAPLAYERCONTROL_H
 #define AVFMEDIAPLAYERCONTROL_H
 
-#include <QtMultimedia/QMediaPlayerControl>
 #include <QtCore/QObject>
+#include <QtCore/QByteArray>
+#include <QtCore/QSet>
+#include <QtCore/QResource>
+#include <QtMultimedia/QMediaPlayerControl>
+
+#import <AVFoundation/AVFoundation.h>
+
+@class AVFMediaPlayerControlObserver;
 
 QT_BEGIN_NAMESPACE
 
-class AVFMediaPlayerSession;
+class AVFMediaPlayerService;
+class AVFMediaPlayer;
+class QMediaControl;
 
 class AVFMediaPlayerControl : public QMediaPlayerControl
 {
     Q_OBJECT
 public:
-    explicit AVFMediaPlayerControl(QObject *parent = 0);
+    explicit AVFMediaPlayerControl(AVFMediaPlayer *player, QObject *parent = 0);
     ~AVFMediaPlayerControl();
-
-    void setSession(AVFMediaPlayerSession *session);
 
     QMediaPlayer::State state() const;
     QMediaPlayer::MediaStatus mediaStatus() const;
@@ -92,8 +99,54 @@ public Q_SLOTS:
     void setVolume(int volume);
     void setMuted(bool muted);
 
+    void processAssetLoaded();
+    void processMediaLoadError();
+
 private:
-    AVFMediaPlayerSession *m_session;
+    class ResourceHandler {
+    public:
+        ResourceHandler():resource(0) {}
+        ~ResourceHandler() { clear(); }
+        void setResourceFile(const QString &file) {
+            if (resource) {
+                if (resource->fileName() == file)
+                    return;
+                delete resource;
+                rawData.clear();
+            }
+            resource = new QResource(file);
+        }
+        bool isValid() const { return resource && resource->isValid() && resource->data() != 0; }
+        const uchar *data() {
+            if (!isValid())
+                return 0;
+            if (resource->isCompressed()) {
+                if (rawData.size() == 0)
+                    rawData = qUncompress(resource->data(), resource->size());
+                return (const uchar *)rawData.constData();
+            }
+            return resource->data();
+        }
+        qint64 size() {
+            if (data() == 0)
+                return 0;
+            return resource->isCompressed() ? rawData.size() : resource->size();
+        }
+        void clear() {
+            delete resource;
+            rawData.clear();
+        }
+        QResource *resource;
+        QByteArray rawData;
+    };
+
+    AVFMediaPlayer *m_player;
+
+    QIODevice *m_mediaStream;
+    QMediaContent m_resources;
+    ResourceHandler m_resourceHandler;
+
+    AVFMediaPlayerControlObserver *m_observer;
 };
 
 QT_END_NAMESPACE

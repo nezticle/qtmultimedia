@@ -42,6 +42,7 @@
 #include "avfcamerarenderercontrol.h"
 #include "avfcamerasession.h"
 #include "avfcameraservice.h"
+#include "avfcommon.h"
 #include "avfcameradebug.h"
 
 #include <QtMultimedia/qabstractvideosurface.h>
@@ -49,56 +50,6 @@
 #include <QtMultimedia/qvideosurfaceformat.h>
 
 QT_USE_NAMESPACE
-
-class CVPixelBufferVideoBuffer : public QAbstractVideoBuffer
-{
-public:
-    CVPixelBufferVideoBuffer(CVPixelBufferRef buffer)
-        : QAbstractVideoBuffer(NoHandle)
-        , m_buffer(buffer)
-        , m_mode(NotMapped)
-    {
-        CVPixelBufferRetain(m_buffer);
-    }
-
-    virtual ~CVPixelBufferVideoBuffer()
-    {
-        CVPixelBufferRelease(m_buffer);
-    }
-
-    MapMode mapMode() const { return m_mode; }
-
-    uchar *map(MapMode mode, int *numBytes, int *bytesPerLine)
-    {
-        if (mode != NotMapped && m_mode == NotMapped) {
-            CVPixelBufferLockBaseAddress(m_buffer, 0);
-
-            if (numBytes)
-                *numBytes = CVPixelBufferGetDataSize(m_buffer);
-
-            if (bytesPerLine)
-                *bytesPerLine = CVPixelBufferGetBytesPerRow(m_buffer);
-
-            m_mode = mode;
-
-            return (uchar*)CVPixelBufferGetBaseAddress(m_buffer);
-        } else {
-            return 0;
-        }
-    }
-
-    void unmap()
-    {
-        if (m_mode != NotMapped) {
-            m_mode = NotMapped;
-            CVPixelBufferUnlockBaseAddress(m_buffer, 0);
-        }
-    }
-
-private:
-    CVPixelBufferRef m_buffer;
-    MapMode m_mode;
-};
 
 @interface AVFCaptureFramesDelegate : NSObject <AVCaptureVideoDataOutputSampleBufferDelegate>
 {

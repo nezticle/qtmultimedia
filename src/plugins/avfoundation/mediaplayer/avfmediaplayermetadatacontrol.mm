@@ -40,20 +40,19 @@
 ****************************************************************************/
 
 #include "avfmediaplayermetadatacontrol.h"
-#include "avfmediaplayersession.h"
+#include "avfmediaplayer.h"
 
 #include <QtMultimedia/qmultimedia.h>
 
 #import <AVFoundation/AVFoundation.h>
 
-QT_USE_NAMESPACE
+QT_BEGIN_NAMESPACE
 
-AVFMediaPlayerMetaDataControl::AVFMediaPlayerMetaDataControl(AVFMediaPlayerSession *session, QObject *parent)
+AVFMediaPlayerMetaDataControl::AVFMediaPlayerMetaDataControl(AVFMediaPlayer *player, QObject *parent)
     : QMetaDataReaderControl(parent)
-    , m_session(session)
+    , m_player(player)
     , m_asset(0)
 {
-    QObject::connect(m_session, SIGNAL(mediaStatusChanged(QMediaPlayer::MediaStatus)), this, SLOT(updateTags()));
 }
 
 AVFMediaPlayerMetaDataControl::~AVFMediaPlayerMetaDataControl()
@@ -88,7 +87,7 @@ void AVFMediaPlayerMetaDataControl::updateTags()
 #ifdef QT_DEBUG_AVF
     qDebug() << Q_FUNC_INFO;
 #endif
-    AVAsset *currentAsset = (AVAsset*)m_session->currentAssetHandle();
+    AVAsset *currentAsset = m_player->currentAsset();
 
     //Don't read the tags from the same asset more than once
     if (currentAsset == m_asset) {
@@ -100,58 +99,65 @@ void AVFMediaPlayerMetaDataControl::updateTags()
     //Since we've changed assets, clear old tags
     m_tags.clear();
 
-    NSArray *metadataFormats = [currentAsset availableMetadataFormats];
-    for ( NSString *format in metadataFormats) {
+    if (currentAsset) {
+
+        NSArray *metadataFormats = [currentAsset availableMetadataFormats];
+        for ( NSString *format in metadataFormats) {
 #ifdef QT_DEBUG_AVF
-        qDebug() << "format: " << [format UTF8String];
+            qDebug() << "format: " << [format UTF8String];
 #endif
-        NSArray *metadataItems = [currentAsset metadataForFormat:format];
-        for (AVMetadataItem* item in metadataItems) {
-            NSString *keyString = [item commonKey];
-            NSString *value = [item stringValue];
+            NSArray *metadataItems = [currentAsset metadataForFormat:format];
+            for (AVMetadataItem* item in metadataItems) {
+                NSString *keyString = [item commonKey];
+                NSString *value = [item stringValue];
 
-            if (keyString.length != 0) {
-                //Process "commonMetadata" tags here:
-                if ([keyString isEqualToString:AVMetadataCommonKeyTitle]) {
-                    m_tags.insert(QMediaMetaData::Title, QString([value UTF8String]));
-                } else if ([keyString isEqualToString: AVMetadataCommonKeyCreator]) {
-                    m_tags.insert(QMediaMetaData::Author, QString([value UTF8String]));
-                } else if ([keyString isEqualToString: AVMetadataCommonKeySubject]) {
-                    m_tags.insert(QMediaMetaData::SubTitle, QString([value UTF8String]));
-                } else if ([keyString isEqualToString: AVMetadataCommonKeyDescription]) {
-                    m_tags.insert(QMediaMetaData::Description, QString([value UTF8String]));
-                } else if ([keyString isEqualToString: AVMetadataCommonKeyPublisher]) {
-                    m_tags.insert(QMediaMetaData::Publisher, QString([value UTF8String]));
-                } else if ([keyString isEqualToString: AVMetadataCommonKeyContributor]) {
-                    m_tags.insert(QMediaMetaData::ContributingArtist, QString([value UTF8String]));
-                } else if ([keyString isEqualToString: AVMetadataCommonKeyCreationDate]) {
-                    m_tags.insert(QMediaMetaData::Date, QString([value UTF8String]));
-                } else if ([keyString isEqualToString: AVMetadataCommonKeyType]) {
-                    m_tags.insert(QMediaMetaData::MediaType, QString([value UTF8String]));
-                } else if ([keyString isEqualToString: AVMetadataCommonKeyLanguage]) {
-                    m_tags.insert(QMediaMetaData::Language, QString([value UTF8String]));
-                } else if ([keyString isEqualToString: AVMetadataCommonKeyCopyrights]) {
-                    m_tags.insert(QMediaMetaData::Copyright, QString([value UTF8String]));
-                } else if ([keyString isEqualToString: AVMetadataCommonKeyAlbumName]) {
-                    m_tags.insert(QMediaMetaData::AlbumTitle, QString([value UTF8String]));
-                } else if ([keyString isEqualToString: AVMetadataCommonKeyAuthor]) {
-                    m_tags.insert(QMediaMetaData::Author, QString([value UTF8String]));
-                } else if ([keyString isEqualToString: AVMetadataCommonKeyArtist]) {
-                    m_tags.insert(QMediaMetaData::AlbumArtist, QString([value UTF8String]));
-                } else if ([keyString isEqualToString: AVMetadataCommonKeyArtwork]) {
-                    m_tags.insert(QMediaMetaData::PosterUrl, QString([value UTF8String]));
+                if (keyString.length != 0) {
+                    //Process "commonMetadata" tags here:
+                    if ([keyString isEqualToString:AVMetadataCommonKeyTitle]) {
+                        m_tags.insert(QMediaMetaData::Title, QString([value UTF8String]));
+                    } else if ([keyString isEqualToString: AVMetadataCommonKeyCreator]) {
+                        m_tags.insert(QMediaMetaData::Author, QString([value UTF8String]));
+                    } else if ([keyString isEqualToString: AVMetadataCommonKeySubject]) {
+                        m_tags.insert(QMediaMetaData::SubTitle, QString([value UTF8String]));
+                    } else if ([keyString isEqualToString: AVMetadataCommonKeyDescription]) {
+                        m_tags.insert(QMediaMetaData::Description, QString([value UTF8String]));
+                    } else if ([keyString isEqualToString: AVMetadataCommonKeyPublisher]) {
+                        m_tags.insert(QMediaMetaData::Publisher, QString([value UTF8String]));
+                    } else if ([keyString isEqualToString: AVMetadataCommonKeyContributor]) {
+                        m_tags.insert(QMediaMetaData::ContributingArtist, QString([value UTF8String]));
+                    } else if ([keyString isEqualToString: AVMetadataCommonKeyCreationDate]) {
+                        m_tags.insert(QMediaMetaData::Date, QString([value UTF8String]));
+                    } else if ([keyString isEqualToString: AVMetadataCommonKeyType]) {
+                        m_tags.insert(QMediaMetaData::MediaType, QString([value UTF8String]));
+                    } else if ([keyString isEqualToString: AVMetadataCommonKeyLanguage]) {
+                        m_tags.insert(QMediaMetaData::Language, QString([value UTF8String]));
+                    } else if ([keyString isEqualToString: AVMetadataCommonKeyCopyrights]) {
+                        m_tags.insert(QMediaMetaData::Copyright, QString([value UTF8String]));
+                    } else if ([keyString isEqualToString: AVMetadataCommonKeyAlbumName]) {
+                        m_tags.insert(QMediaMetaData::AlbumTitle, QString([value UTF8String]));
+                    } else if ([keyString isEqualToString: AVMetadataCommonKeyAuthor]) {
+                        m_tags.insert(QMediaMetaData::Author, QString([value UTF8String]));
+                    } else if ([keyString isEqualToString: AVMetadataCommonKeyArtist]) {
+                        m_tags.insert(QMediaMetaData::AlbumArtist, QString([value UTF8String]));
+                    } else if ([keyString isEqualToString: AVMetadataCommonKeyArtwork]) {
+                        m_tags.insert(QMediaMetaData::PosterUrl, QString([value UTF8String]));
+                    }
                 }
-            }
 
-            if ([format isEqualToString:AVMetadataFormatID3Metadata]) {
-                //TODO: Process ID3 metadata
-            } else if ([format isEqualToString:AVMetadataFormatiTunesMetadata]) {
-                //TODO: Process iTunes metadata
-            } else if ([format isEqualToString:AVMetadataFormatQuickTimeUserData]) {
-                //TODO: Process QuickTime metadata
+                if ([format isEqualToString:AVMetadataFormatID3Metadata]) {
+                    //TODO: Process ID3 metadata
+                } else if ([format isEqualToString:AVMetadataFormatiTunesMetadata]) {
+                    //TODO: Process iTunes metadata
+                } else if ([format isEqualToString:AVMetadataFormatQuickTimeUserData]) {
+                    //TODO: Process QuickTime metadata
+                }
             }
         }
     }
 
     Q_EMIT metaDataChanged();
 }
+
+QT_END_NAMESPACE
+
+#include "moc_avfmediaplayermetadatacontrol.cpp"

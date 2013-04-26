@@ -61,8 +61,6 @@ public:
     AVFVideoWidgetControl(QObject *parent = 0);
     virtual ~AVFVideoWidgetControl();
 
-    void setLayer(void *playerLayer);
-
     QWidget *videoWidget();
 
     bool isFullScreen() const;
@@ -83,15 +81,10 @@ public:
     int saturation() const;
     void setSaturation(int saturation);
 
-private Q_SLOTS:
-    void updateVideoFrame(const CVTimeStamp &ts);
+    void processVideoSampleBuffer(const CMSampleBufferRef &sampleBuffer);
 
 private:
-    void setupVideoOutput();
-
-    AVFDisplayLink *m_displayLink;
     AVFVideoWidget *m_videoWidget;
-    AVFVideoFrameRenderer *m_frameRenderer;
     QSize m_nativeSize;
     Qt::AspectRatioMode m_aspectRatioMode;
     bool m_fullscreen;
@@ -99,8 +92,6 @@ private:
     int m_contrast;
     int m_hue;
     int m_saturation;
-
-    void *m_playerLayer;
 };
 
 QT_END_NAMESPACE

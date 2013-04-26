@@ -66,26 +66,16 @@ public:
     QAbstractVideoSurface *surface() const;
     void setSurface(QAbstractVideoSurface *surface);
 
-    void setLayer(void *playerLayer);
-
-private Q_SLOTS:
-    void updateVideoFrame(const CVTimeStamp &ts);
+    void processVideoSampleBuffer(const CMSampleBufferRef &sampleBuffer);
 
 Q_SIGNALS:
     void surfaceChanged(QAbstractVideoSurface *surface);
 
 private:
-    void setupVideoOutput();
-
-    QMutex m_mutex;
     QAbstractVideoSurface *m_surface;
-
-    void *m_playerLayer;
-
-    AVFVideoFrameRenderer *m_frameRenderer;
-    AVFDisplayLink *m_displayLink;
+    AVFVideoFrameRenderer *m_videoFrameRenderer;
     QSize m_nativeSize;
-    bool m_enableOpenGL;
+
 };
 
 QT_END_NAMESPACE

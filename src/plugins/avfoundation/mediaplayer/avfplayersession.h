@@ -39,35 +39,35 @@
 **
 ****************************************************************************/
 
-#ifndef AVFMEDIAPLAYERSESSION_H
-#define AVFMEDIAPLAYERSESSION_H
+#ifndef AVFPLAYERSESSION_H
+#define AVFPLAYERSESSION_H
 
 #include <QtCore/QObject>
 #include <QtCore/QByteArray>
 #include <QtCore/QSet>
 #include <QtCore/QResource>
-
 #include <QtMultimedia/QMediaPlayerControl>
 #include <QtMultimedia/QMediaPlayer>
 
-#import <AVFoundation/AVFoundation.h>
-
-@class AVFMediaPlayerSessionObserver;
+@class AVFPlayerSessionObserver;
+@class AVAsset;
+@class AVAssetReader;
+@class AVAssetReaderTrackOutput;
 
 QT_BEGIN_NAMESPACE
 
 class AVFMediaPlayerService;
-class AVFVideoOutput;
+class QMediaControl;
 
-class AVFMediaPlayerSession : public QObject
+class AVFPlayerSession : public QObject
 {
     Q_OBJECT
 public:
-    AVFMediaPlayerSession(AVFMediaPlayerService *service, QObject *parent = 0);
-    virtual ~AVFMediaPlayerSession();
-
-    void setVideoOutput(AVFVideoOutput *output);
-    void *currentAssetHandle();
+    explicit AVFPlayerSession(AVFMediaPlayerService *service, QObject *parent = 0);
+    ~AVFPlayerSession();
+    
+    void setVideoOutput(QMediaControl *output);
+    AVAsset *currentAsset();
 
     QMediaPlayer::State state() const;
     QMediaPlayer::MediaStatus mediaStatus() const;
@@ -104,12 +104,8 @@ public Q_SLOTS:
     void setVolume(int volume);
     void setMuted(bool muted);
 
-    void processEOS();
-    void processLoadStateChange();
-    void processPositionChange();
+    void processAssetLoaded();
     void processMediaLoadError();
-
-    void processCurrentItemChanged();
 
 Q_SIGNALS:
     void positionChanged(qint64 position);
@@ -160,8 +156,14 @@ private:
         QByteArray rawData;
     };
 
+    void resetAssetData();
+    void resetMediaReaders();
+
+    AVAssetTrack *videoTrack();
+    AVAssetTrack *audioTrack();
+
     AVFMediaPlayerService *m_service;
-    AVFVideoOutput *m_videoOutput;
+    QMediaControl *m_videoOutput;
 
     QMediaPlayer::State m_state;
     QMediaPlayer::MediaStatus m_mediaStatus;
@@ -174,13 +176,21 @@ private:
     int m_volume;
     qreal m_rate;
 
-    qint64 m_duration;
     bool m_videoAvailable;
     bool m_audioAvailable;
 
-    AVFMediaPlayerSessionObserver *m_observer;
+    AVFPlayerSessionObserver *m_observer;
+    AVAsset *m_currentAsset;
+    AVAssetReader *m_assetReader;
+    AVAssetReaderTrackOutput *m_assetVideoOutputReaderTrack;
+    AVAssetReaderTrackOutput *m_assetAudioOutputReaderTrack;
+    CMTime m_nativeDuration;
+    CMTime m_nativePosition;
+    CMTimeRange m_nativePlaybackRange;
+
+    
 };
 
 QT_END_NAMESPACE
 
-#endif // AVFMEDIAPLAYERSESSION_H
+#endif // AVFPLAYERSESSION_H
